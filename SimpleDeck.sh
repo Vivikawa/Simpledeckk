@@ -8,22 +8,6 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# Запрос пароля через Zenity
-password=$(zenity --password --title="Права суперпользователя требуются")
-
-# Проверка, что пароль введён
-if [[ -z "$password" ]]; then
-  zenity --error --text="Пароль не введён. Операция отменена."
-  exit 1
-fi
-
-# Проверка правильности пароля
-echo "$password" | sudo -S -v &>/dev/null
-if [[ $? -ne 0 ]]; then
-  zenity --error --text="Неверный пароль или отказ в доступе."
-  exit 1
-fi
-
 # Предложение выбора директории
 choice=$(zenity --list \
   --title="Выбор директории" \
@@ -59,8 +43,14 @@ esac
 # Создание .hidden файла в зависимости от выбранного пути
 if [[ "$path" == "/" ]]; then
   cd "$path" || exit 1
-  sudo -A ls -A | grep -v '^home$' > .hidden
+  ls -A | grep -v '^home$' > .hidden
   zenity --info --text="Файл .hidden создан в корневой директории, исключая 'home'."
+else 
+   [[ "$path" == "/home/" ]]; then
+  cd "$path" || exit 1
+  ls -A | grep -v '^deck$' > .hidden
+  zenity --info --text="Файл .hidden создан в домашней директории, исключая 'deck'."
+
 else
   cd "$path" || exit 1
   ls -A > .hidden
